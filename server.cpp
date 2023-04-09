@@ -15,8 +15,7 @@ int main()
 	TcpListener listener;
 	SocketSelector selector;
 
-	vector<TcpSocket*> clients;
-	vector<User*> user;
+	vector<User*> clients;
 
 	listener.getLocalPort();
 	listener.listen(55001);
@@ -29,29 +28,48 @@ int main()
 		{
 			if(selector.isReady(listener))
 			{
+				//Тут идея такая, что сделал промежуточный сокет
+				//Чтобы получить пакет и построить класс пользователь
+				//Из данных, что пришли в пакете
 				TcpSocket * socket = new TcpSocket;
-				listener.accept(*socket);
 				
 				Packet packet;
-				socket -> receive(packet);
-
-				cout << "\nClient's connection: " << socket -> getLocalPort() << endl;
-				clients.push_back(socket);
-				selector.add(*socket);
 				
 				string log, pas;
-				packet >> log >> pas;
-				User *usr = new User(log, pas, user.size());
-				user.push_back(usr);
-				cout << "log: " << usr -> get_name() << endl << "Id: " << usr -> get_id() << endl;
 
+				socket -> receive(packet);
+				packet >> log >> pas;
+				delete socket;
+
+				User *person = new User(log, pas);
+
+				listener.accept(*((*person).get_socket()));
+				
+				
+			/*	if(socket -> receive(packet) == Socket::Done)
+				{	
+					
+					packet >> tmp;
+					packet << tmp;
+					for (vector<TcpSocket*>::iterator it = clients.begin();it != clients.end();it++)
+					{
+						(*it) -> send(packet);
+					}
+				}  */
+
+				cout << "\nClient's connection: " << (*(person -> get_socket())).getLocalPort() << endl;
+				clients.push_back(person);
+				selector.add(*(person->get_socket()));
 			}
+//Вот тут буду смотреть пришли ли сообщения от клиента
+//и кому они направлены(всем или определенному лицу)
+//Сообщения будут отправляться с указанием от кого и кому
+
+			for (vector<User*>::iterator it = clients.begin();it != clients.end();it++);
 		}
 	}
 	
-	for (vector<TcpSocket*>::iterator it = clients.begin();it != clients.end();it++) delete *it;
+	for (vector<User*>::iterator it = clients.begin();it != clients.end();it++) delete *it;
 	
-	for (vector<User*>::iterator it = user.begin();it != user.end();it++) delete *it;
-
 	return 0;
 }

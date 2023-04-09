@@ -5,34 +5,35 @@
 using namespace sf;
 using namespace std;
 
-void entrance(TcpSocket& sock)
+int main()
 {
-	string login, pass;
+
+	TcpSocket socket;
+	socket.connect("192.168.220.186",55001);
 	
+	string login, pass;
+	Packet packet;
+
 	cout << "Ваш логин: ";
 	cin >> login;
 	
 	cout << "\nВаш пароль: ";
 	cin >> pass;
+	cout << endl;
 	
-	Packet packet;
 	packet << login << pass;
+	socket.send(packet);
 	
-	sock.send(packet);
+	string tmp;
 
-	return;
-}
+	while(true)
+	{
+		if(socket.receive(packet) == Socket::Done)
+		{
+			packet >> tmp;
+			cout << "\n" << tmp << "\n";
+		}
+	}
 
-int main()
-{
-	//Подключаемся к серверу
-	//Просим выбрать \"войти/зарегистрироваться\"
-	//После, отправляем данные на сервер для проверки
-
-	TcpSocket socket;
-	socket.connect("192.168.220.186",55001);
-	
-	entrance(socket);
-	
 	return 0;
 }
