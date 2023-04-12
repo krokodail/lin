@@ -116,6 +116,10 @@ int main()
 					
 					packet << message;
 					socket.send(packet);
+					
+					packet.clear();
+					message.clear();
+
 					socket.disconnect();
 
 					return 0;

@@ -83,7 +83,9 @@ int main()
 
 								packet << message;
 								(*clients[i]).get_socket() -> send(packet);
-								packet.clear();
+								
+								packet.clear(); 
+								message.clear();
 							}
 							
 							if(message._recipient == "all")
@@ -96,7 +98,8 @@ int main()
 									(*clients[i]).get_socket() -> send(packet);
 								}
 
-								packet.clear();
+								packet.clear(); 
+								message.clear();
 							}
 							
 							if (message._text_message == "delete")
@@ -106,11 +109,12 @@ int main()
 									if((clients[i] -> get_name()) == message._sender) 
 									{
 										clients.erase(clients.begin() + i);
+										break;
 									}
-									packet.clear();
-									message.clear();
-									break;
 								}
+
+								packet.clear();
+								message.clear();
 							//Конец очистки
 							}
 							
@@ -123,7 +127,10 @@ int main()
 										packet.clear();
 										packet << message;
 										(*clients[i]).get_socket() -> send(packet);
-										packet.clear();
+										
+										packet.clear(); 
+										message.clear();
+										
 										break;
 									}
 								}
