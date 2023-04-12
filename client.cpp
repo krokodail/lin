@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <csignal>
 #include "message.h"
 #include <SFML/Network.hpp>
 
@@ -39,6 +40,7 @@ int main()
 		     << "2) Отправить личное сообщение\n"
 		     << "3) Отправить сообщение всем\n"
 		     << "4) Проверить входящие сообщения\n"
+		     << "5) Выход(Закрыть приложение)\n"
 		     << "Введите номер: ";
 
 		cin >> select;
@@ -67,7 +69,8 @@ int main()
 					cin >> message._recipient;
 					
 					cout << "\nВаше послание?: ";
-					cin >> message._text_message;
+					cin.ignore(numeric_limits<streamsize>::max(), '\n');
+					getline(cin, message._text_message);
 					
 					packet << message;
 					socket.send(packet);
@@ -97,10 +100,25 @@ int main()
 						packet >> message;
 						cout  <<  message << "\n";
 						packet.clear();
+						message.clear();
 					}
 					else cout << "\nВходящих пока не было\n";
 					
 					break;
+				}
+
+			case 5:
+				{
+					packet.clear();
+					
+					message._text_message = "delete";
+					message._recipient = "Server";
+					
+					packet << message;
+					socket.send(packet);
+					socket.disconnect();
+
+					return 0;
 				}
 
 			default:
@@ -109,17 +127,6 @@ int main()
 		}
 		
 	}
-	message.clear();
-	packet.clear();
-
-	message._sender = login;
-	message._recipient = "Server";
-	message._text_message = "delete";	
 	
-	packet << message;	
-	socket.send(packet);
-
-	socket.disconnect();
-
 	return 0;
 }

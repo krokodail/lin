@@ -2,9 +2,9 @@
 
 User::User() {}
 
-User::User(std::string name, std::string pass): _name_user(name), _pass_user(pass) {}
+User::User(std::string name, std::string pass): _log_user(name), _pass_user(pass) {}
 
-std::string User::get_name() const {return _name_user;}
+std::string User::get_name() const {return _log_user;}
 
 sf::TcpSocket* User::get_socket() {return _socket;}
 

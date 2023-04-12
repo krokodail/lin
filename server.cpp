@@ -33,8 +33,8 @@ int main()
 			if(selector.isReady(listener))
 			{
 				TcpSocket *socket = new TcpSocket;
-				
 				listener.accept(*socket);
+				
 				Packet packet;
 				string log, pas;
 
@@ -43,6 +43,7 @@ int main()
 					packet >> log >> pas;
 					User *usr = new User(log, pas);
 					usr -> set_socket(socket);
+					
 					
 					clients.push_back(usr);
 					selector.add(*(usr -> get_socket()));
@@ -102,7 +103,10 @@ int main()
 							{//очищает вектор от офлайн юзеров
 								for(int i = 0; i < clients.size(); i++)
 								{
-									if((clients[i] -> get_name()) == message._sender) clients.erase(clients.begin() + i);
+									if((clients[i] -> get_name()) == message._sender) 
+									{
+										clients.erase(clients.begin() + i);
+									}
 									packet.clear();
 									message.clear();
 									break;

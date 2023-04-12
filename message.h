@@ -11,7 +11,6 @@ struct Message
 
 	void clear(void)
 	{
-		_sender = "";
 		 _recipient = "";
 		 _text_message = "";
 	}
