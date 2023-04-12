@@ -2,16 +2,18 @@
 #include <string>
 #include <SFML/Network.hpp>
 
-class User final
+class User 
 {
 	private:
 		std::string	_name_user;
 		std::string	_pass_user;
-		sf::TcpSocket _socket;
+		sf::TcpSocket* _socket = nullptr;
 	
 	public:
+		User();
 		User(std::string, std::string);
 		std::string get_name() const;
-		sf::TcpSocket* get_socket() ;
+		sf::TcpSocket* get_socket();
+		void set_socket(sf::TcpSocket*);
 
 };

@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include "user.h"
+#include "message.h"
 
 using namespace std;
 using namespace sf;
@@ -13,63 +14,125 @@ int main()
 
 	
 	TcpListener listener;
+	
 	SocketSelector selector;
 
 	vector<User*> clients;
 
-	listener.getLocalPort();
 	listener.listen(55001);
-
 	selector.add(listener);
 	
 	while(true)
 	{
 		if(selector.wait())
-		{
+		{ //Часть отвечающая за создание нового пользователя
+		  //Когда есть входящее соединение
+		  //И если передан логин и пароль
+		  //
+		  //Сюда же нужно добавить проверку на существующего с таким именем пользователя
 			if(selector.isReady(listener))
 			{
-				//Тут идея такая, что сделал промежуточный сокет
-				//Чтобы получить пакет и построить класс пользователь
-				//Из данных, что пришли в пакете
-				TcpSocket * socket = new TcpSocket;
+				TcpSocket *socket = new TcpSocket;
 				
+				listener.accept(*socket);
 				Packet packet;
-				
 				string log, pas;
 
-				socket -> receive(packet);
-				packet >> log >> pas;
-				delete socket;
-
-				User *person = new User(log, pas);
-
-				listener.accept(*((*person).get_socket()));
-				
-				
-			/*	if(socket -> receive(packet) == Socket::Done)
-				{	
+				if(socket -> receive(packet) == Socket::Done)
+				{
+					packet >> log >> pas;
+					User *usr = new User(log, pas);
+					usr -> set_socket(socket);
 					
-					packet >> tmp;
-					packet << tmp;
-					for (vector<TcpSocket*>::iterator it = clients.begin();it != clients.end();it++)
-					{
-						(*it) -> send(packet);
-					}
-				}  */
+					clients.push_back(usr);
+					selector.add(*(usr -> get_socket()));
 
-				cout << "\nClient's connection: " << (*(person -> get_socket())).getLocalPort() << endl;
-				clients.push_back(person);
-				selector.add(*(person->get_socket()));
+				}
+				
+				socket = nullptr;
+				delete socket;
+				
 			}
-//Вот тут буду смотреть пришли ли сообщения от клиента
-//и кому они направлены(всем или определенному лицу)
-//Сообщения будут отправляться с указанием от кого и кому
+		//конец 'создания(проверки) пользователя'
+			
+			//часть проверки запросов от пользователя
+			else
+			{
+				for(int i = 0; i < clients.size(); i++)
+				{
+					if(selector.isReady(*(clients[i] -> get_socket())))
+					{
+						Packet packet;
+						if(clients[i] -> get_socket() -> receive(packet) == Socket::Done)
+						{
+							Message message;
+							packet >> message;
+							if (message._text_message == "list_of_users")
+							{
+								packet.clear();
+								message.clear();
 
-			for (vector<User*>::iterator it = clients.begin();it != clients.end();it++);
-		}
+								for(int j = 0; j < clients.size(); j++)
+								{
+									message._text_message += clients[j] -> get_name() + ' ';
+								}
+								
+								message._sender = "server";
+								message._recipient = clients[i] -> get_name();
+
+								packet << message;
+								(*clients[i]).get_socket() -> send(packet);
+								packet.clear();
+							}
+							
+							if(message._recipient == "all")
+							{
+								packet << message;
+
+								for(int i = 0; i < clients.size(); i++)
+								{
+									if((message._sender) == (clients[i] -> get_name())) continue;
+									(*clients[i]).get_socket() -> send(packet);
+								}
+
+								packet.clear();
+							}
+							
+							if (message._text_message == "delete")
+							{//очищает вектор от офлайн юзеров
+								for(int i = 0; i < clients.size(); i++)
+								{
+									if((clients[i] -> get_name()) == message._sender) clients.erase(clients.begin() + i);
+									packet.clear();
+									message.clear();
+									break;
+								}
+							//Конец очистки
+							}
+							
+							else
+							{
+								for(int i = 0; i < clients.size(); i++)
+								{
+									if(message._recipient == clients[i] -> get_name())
+									{
+										packet.clear();
+										packet << message;
+										(*clients[i]).get_socket() -> send(packet);
+										packet.clear();
+										break;
+									}
+								}
+
+							}
+						}
+					}
+				}
+			}
+			//Конец проверки запросов пользователя
+		}		
+
 	}
-	
-	for (vector<User*>::iterator it = clients.begin();it != clients.end();it++) delete *it;
-	
+			
 	return 0;
 }
