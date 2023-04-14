@@ -33,8 +33,8 @@ int main()
 			if(selector.isReady(listener))
 			{
 				TcpSocket *socket = new TcpSocket;
-				listener.accept(*socket);
 				
+				listener.accept(*socket);
 				Packet packet;
 				string log, pas;
 
@@ -44,14 +44,12 @@ int main()
 					User *usr = new User(log, pas);
 					usr -> set_socket(socket);
 					
-					
 					clients.push_back(usr);
 					selector.add(*(usr -> get_socket()));
 
 				}
 				
 				socket = nullptr;
-				delete socket;
 				
 			}
 		//конец 'создания(проверки) пользователя'
@@ -83,8 +81,7 @@ int main()
 
 								packet << message;
 								(*clients[i]).get_socket() -> send(packet);
-								
-								packet.clear(); 
+								packet.clear();
 								message.clear();
 							}
 							
@@ -94,27 +91,28 @@ int main()
 
 								for(int i = 0; i < clients.size(); i++)
 								{
-									if((message._sender) == (clients[i] -> get_name())) continue;
+									
 									(*clients[i]).get_socket() -> send(packet);
 								}
 
-								packet.clear(); 
+								packet.clear();
 								message.clear();
 							}
 							
 							if (message._text_message == "delete")
 							{//очищает вектор от офлайн юзеров
-								for(int i = 0; i < clients.size(); i++)
-								{
-									if((clients[i] -> get_name()) == message._sender) 
-									{
-										clients.erase(clients.begin() + i);
-										break;
-									}
-								}
-
-								packet.clear();
-								message.clear();
+								
+							    for(int i = 0; i < clients.size(); i++)
+							    {
+								    if((clients[i] -> get_name()) == (message._sender))
+								    {
+									    clients.erase(remove(clients.begin(), clients.end(), clients[i]), clients.end());
+									    break;
+								    }
+                        
+							    }
+							    packet.clear();
+							    message.clear();
 							//Конец очистки
 							}
 							
@@ -128,9 +126,9 @@ int main()
 										packet << message;
 										(*clients[i]).get_socket() -> send(packet);
 										
-										packet.clear(); 
+										packet.clear();
 										message.clear();
-										
+
 										break;
 									}
 								}
@@ -147,3 +145,4 @@ int main()
 			
 	return 0;
 }
+

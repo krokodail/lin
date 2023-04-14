@@ -7,6 +7,25 @@
 using namespace sf;
 using namespace std;
 
+void Registration (TcpSocket& sock, Packet& pack, Message& mess, string& log, string& pas)
+{
+	
+	
+	cout << "Ваш логин: ";
+	cin >> log;
+	
+	cout << "\nВаш пароль: ";
+	cin >> pas;
+	cout << endl;
+	
+	mess._sender = log;
+
+	pack << log << pas;
+	sock.send(pack);
+	pack.clear();
+	mess.clear();
+}
+
 int main()
 {
 
@@ -14,22 +33,12 @@ int main()
 	socket.setBlocking(false);
 	socket.connect("192.168.0.149", 55001);
 	
-	string login(""), pass("");
 	Message message;
-
 	Packet packet;
 
-	cout << "Ваш логин: ";
-	cin >> login;
-	
-	cout << "\nВаш пароль: ";
-	cin >> pass;
-	cout << endl;
-	
-	message._sender = login;
+	string login(""), pass("");
 
-	packet << login << pass;
-	socket.send(packet);
+	Registration(socket, packet, message, login, pass);
 	
 	short select(0); // переменная Для switch
 
@@ -110,7 +119,9 @@ int main()
 			case 5:
 				{
 					packet.clear();
+					message.clear();
 					
+					message._sender = login;
 					message._text_message = "delete";
 					message._recipient = "Server";
 					
