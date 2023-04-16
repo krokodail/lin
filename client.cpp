@@ -10,7 +10,6 @@ using namespace std;
 void Registration (TcpSocket& sock, Packet& pack, Message& mess, string& log, string& pas)
 {
 	
-	
 	cout << "Ваш логин: ";
 	cin >> log;
 	
@@ -39,8 +38,27 @@ int main()
 	string login(""), pass("");
 
 	Registration(socket, packet, message, login, pass);
-	
+
 	short select(0); // переменная Для switch
+	
+	while(true)
+	{
+		socket.receive(packet);
+		packet >> message;
+		cout << "\nВведите 0(ноль), чтобы узнать результат входа: ";
+		cin >> select;
+		if((select == 0) && (message._text_message == "Exist"))
+		{
+			cout << "\nПользователь с таким логином сейчас онлайн. Придумайте новый логин и пароль\n";
+			packet.clear();
+			message.clear();
+			socket.disconnect();
+			socket.connect("192.168.0.149", 55001);
+			Registration(socket, packet, message, login, pass);
+		}
+		
+		else if((select == 0) && (message._text_message == "good")) break;
+	}
 
 	while(true)
 	{
@@ -60,7 +78,7 @@ int main()
 			case 1:
 				{
 					packet.clear();
-					
+					message._sender = login;
 					message._text_message = "list_of_users";
 					message._recipient = "Server";
 					
@@ -73,6 +91,8 @@ int main()
 			case 2:
 				{
 					packet.clear();
+					
+					message._sender = login;
 					
 					cout << "\nКому отправим(ник)?: ";
 					cin >> message._recipient;
@@ -90,6 +110,8 @@ int main()
 			case 3:
 				{
 					packet.clear();
+					
+					message._sender = login;
 					
 					message._recipient = "all";
 					
@@ -119,7 +141,6 @@ int main()
 			case 5:
 				{
 					packet.clear();
-					message.clear();
 					
 					message._sender = login;
 					message._text_message = "delete";

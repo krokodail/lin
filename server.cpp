@@ -14,7 +14,7 @@ int main()
 
 	
 	TcpListener listener;
-	
+	listener.setBlocking(false);
 	SocketSelector selector;
 
 	vector<User*> clients;
@@ -33,24 +33,91 @@ int main()
 			if(selector.isReady(listener))
 			{
 				TcpSocket *socket = new TcpSocket;
-				
 				listener.accept(*socket);
+				
 				Packet packet;
 				string log, pas;
-
-				if(socket -> receive(packet) == Socket::Done)
+				socket -> receive(packet);
+				packet >> log >> pas;
+				
+				User *usr = new User(log, pas);
+				cout << "Before circle\n";
+				for(int r = 0; r <= (clients.size() -1); r++)
 				{
-					packet >> log >> pas;
-					User *usr = new User(log, pas);
-					usr -> set_socket(socket);
+					cout << "Circle\n";
+					if (clients.empty())
+					{
+						usr -> set_socket(socket);
+						clients.push_back(usr);
+						selector.add(*socket);
+						
+						packet.clear();
+						
+						Message message;
+						message._sender = "server";
+						message._recipient = log;
+						message._text_message = "good";
+						
+						packet.clear();
+						packet << message;
+						socket -> send(packet);
+						
+						packet.clear();
+						message.clear();
+						
+						usr = nullptr;
+						socket = nullptr;
+						
+						break;
+					}
 					
-					clients.push_back(usr);
-					selector.add(*(usr -> get_socket()));
-
-				}
-				
-				socket = nullptr;
-				
+					if(clients[r] -> get_name() == usr -> get_name())
+					{
+						cout << "Client exist\n";
+						Message message;
+						message._sender = "server";
+						message._recipient = log;
+						message._text_message = "Exist";
+						
+						packet.clear();
+						packet << message;
+						socket -> send(packet);
+						
+						packet.clear();
+						message.clear();
+						
+						delete socket;
+						delete usr;
+						
+						break;
+					}
+					
+					if( (r == (clients.size() -1)) && ( (clients[r] -> get_name()) != (usr -> get_name()) ) )
+					{
+						usr -> set_socket(socket);
+						clients.push_back(usr);
+						selector.add(*socket);
+						
+						packet.clear();
+						
+						Message message;
+						message._sender = "server";
+						message._recipient = log;
+						message._text_message = "good";
+						
+						packet.clear();
+						packet << message;
+						socket -> send(packet);
+						
+						packet.clear();
+						message.clear();
+						
+						usr = nullptr;
+						socket = nullptr;
+						
+						break;
+					}
+				}				
 			}
 		//конец 'создания(проверки) пользователя'
 			
@@ -101,18 +168,17 @@ int main()
 							
 							if (message._text_message == "delete")
 							{//очищает вектор от офлайн юзеров
-								
-							    for(int i = 0; i < clients.size(); i++)
-							    {
-								    if((clients[i] -> get_name()) == (message._sender))
-								    {
-									    clients.erase(remove(clients.begin(), clients.end(), clients[i]), clients.end());
-									    break;
-								    }
-                        
-							    }
-							    packet.clear();
-							    message.clear();
+								for(int i = 0; i < clients.size(); i++)
+								{
+									if((clients[i] -> get_name()) == message._sender)
+									{
+										selector.remove(*(clients[i] -> get_socket()));
+										clients.erase(clients.begin() + i);
+									}
+									packet.clear();
+									message.clear();
+									break;
+								}
 							//Конец очистки
 							}
 							
@@ -125,14 +191,11 @@ int main()
 										packet.clear();
 										packet << message;
 										(*clients[i]).get_socket() -> send(packet);
-										
 										packet.clear();
 										message.clear();
-
 										break;
 									}
 								}
-
 							}
 						}
 					}
@@ -145,4 +208,3 @@ int main()
 			
 	return 0;
 }
-
