@@ -1,10 +1,29 @@
 #include <iostream>
 #include <string>
+#include <csignal>
 #include "message.h"
 #include <SFML/Network.hpp>
 
 using namespace sf;
 using namespace std;
+
+void Registration (TcpSocket& sock, Packet& pack, Message& mess, string& log, string& pas)
+{
+	
+	cout << "Ваш логин: ";
+	cin >> log;
+	
+	cout << "\nВаш пароль: ";
+	cin >> pas;
+	cout << endl;
+	
+	mess._sender = log;
+
+	pack << log << pas;
+	sock.send(pack);
+	pack.clear();
+	mess.clear();
+}
 
 int main()
 {
@@ -13,41 +32,53 @@ int main()
 	socket.setBlocking(false);
 	socket.connect("192.168.0.149", 55001);
 	
-	string login(""), pass("");
 	Message message;
-
 	Packet packet;
 
-	cout << "Ваш логин: ";
-	cin >> login;
-	
-	cout << "\nВаш пароль: ";
-	cin >> pass;
-	cout << endl;
-	
-	message._sender = login;
+	string login(""), pass("");
 
-	packet << login << pass;
-	socket.send(packet);
-	
+	Registration(socket, packet, message, login, pass);
+
 	short select(0); // переменная Для switch
+	
+	while(true)
+	{
+		socket.receive(packet);
+		packet >> message;
+		cout << "\nВведите 0(ноль), чтобы узнать результат входа: ";
+		cin >> select;
+		if((select == 0) && (message._text_message == "Exist"))
+		{
+			cout << "\nПользователь с таким логином сейчас онлайн. Придумайте новый логин и пароль\n";
+			packet.clear();
+			message.clear();
+			socket.disconnect();
+			socket.connect("192.168.0.149", 55001);
+			Registration(socket, packet, message, login, pass);
+		}
+		
+		else if((select == 0) && (message._text_message == "good")) break;
+	}
 
 	while(true)
 	{
-		cout << "\n1) Получить список онлайн пользователей\n"
+		cout << "Для получения ответа на запрос или проверки входящих выберите 4-ый вариант"
+		     << "\n1) Получить список онлайн пользователей\n"
 		     << "2) Отправить личное сообщение\n"
 		     << "3) Отправить сообщение всем\n"
+		     << "4) Проверить входящие сообщения\n"
+		     << "5) Выход(Закрыть приложение)\n"
 		     << "Введите номер: ";
 
 		cin >> select;
 		cout << endl;
-
+		
 		switch(select)
 		{
 			case 1:
 				{
 					packet.clear();
-					
+					message._sender = login;
 					message._text_message = "list_of_users";
 					message._recipient = "Server";
 					
@@ -61,11 +92,14 @@ int main()
 				{
 					packet.clear();
 					
+					message._sender = login;
+					
 					cout << "\nКому отправим(ник)?: ";
 					cin >> message._recipient;
 					
 					cout << "\nВаше послание?: ";
-					cin >> message._text_message;
+					cin.ignore(numeric_limits<streamsize>::max(), '\n');
+					getline(cin, message._text_message);
 					
 					packet << message;
 					socket.send(packet);
@@ -77,14 +111,50 @@ int main()
 				{
 					packet.clear();
 					
+					message._sender = login;
+					
 					message._recipient = "all";
 					
 					cout << "\nВаше послание?: ";
-					cin >> message._text_message;
+					cin.ignore(numeric_limits<streamsize>::max(), '\n');
+					getline(cin, message._text_message);
 					
 					packet << message;
 					socket.send(packet);
 					break;
+				}
+			
+			case 4:
+				{
+					if(socket.receive(packet) == Socket::Done)
+					{
+						packet >> message;
+						cout  <<  message << "\n";
+						packet.clear();
+						message.clear();
+					}
+					else cout << "\nВходящих пока не было\n";
+					
+					break;
+				}
+
+			case 5:
+				{
+					packet.clear();
+					
+					message._sender = login;
+					message._text_message = "delete";
+					message._recipient = "Server";
+					
+					packet << message;
+					socket.send(packet);
+					
+					packet.clear();
+					message.clear();
+
+					socket.disconnect();
+
+					return 0;
 				}
 
 			default:
@@ -92,24 +162,7 @@ int main()
 				break;
 		}
 		
-		if(socket.receive(packet) == Socket::Done)
-		{
-			packet >> message;
-			cout << message << "\n";
-			packet.clear();
-		}
 	}
-	message.clear();
-	packet.clear();
-
-	message._sender = login;
-	message._recipient = "Server";
-	message._text_message = "delete";	
 	
-	packet << message;	
-	socket.send(packet);
-
-	socket.disconnect();
-
 	return 0;
 }

@@ -5,7 +5,7 @@
 class User 
 {
 	private:
-		std::string	_name_user;
+		std::string	_log_user;
 		std::string	_pass_user;
 		sf::TcpSocket* _socket = nullptr;
 	

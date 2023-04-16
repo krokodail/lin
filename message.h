@@ -11,7 +11,6 @@ struct Message
 
 	void clear(void)
 	{
-		_sender = "";
 		 _recipient = "";
 		 _text_message = "";
 	}
@@ -31,5 +30,5 @@ sf::Packet& operator>> (sf::Packet& packet, Message& m)
 
 std::ostream& operator<< (std::ostream& os, Message& mess)
 {
-	return os << mess._text_message;
+	return os << mess._sender << ": " << mess._text_message;
 }
