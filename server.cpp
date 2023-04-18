@@ -1,23 +1,21 @@
 #include <SFML/Network.hpp>
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <string>
 #include "user.h"
 #include "message.h"
 
-using namespace std;
-using namespace sf;
-
 int main()
 {
-	cout << "Server is running on: " << IpAddress::getLocalAddress() << endl;
+	std::cout << "Server is running on: " << sf::IpAddress::getLocalAddress() << std::endl;
 
 	
-	TcpListener listener;
-	listener.setBlocking(false);
-	SocketSelector selector;
+	sf::TcpListener listener;
+	//listener.setBlocking(false);
+	sf::SocketSelector selector;
 
-	vector<User*> clients;
+	std::vector<User*> clients;
 
 	listener.listen(55001);
 	selector.add(listener);
@@ -27,27 +25,24 @@ int main()
 		if(selector.wait())
 		{ //Часть отвечающая за создание нового пользователя
 		  //Когда есть входящее соединение
-		  //И если передан логин и пароль
-		  //
-		  //Сюда же нужно добавить проверку на существующего с таким именем пользователя
+		  //Сюда же добавил проверку на существующего с таким же  именем пользователя, как и у входящего 
 			if(selector.isReady(listener))
 			{
-				TcpSocket *socket = new TcpSocket;
+				sf::TcpSocket *socket = new sf::TcpSocket;
 				listener.accept(*socket);
 				
-				Packet packet;
-				string log, pas;
+				sf::Packet packet;
+				std::string log, pas;
 				socket -> receive(packet);
 				packet >> log >> pas;
 				
 				User *usr = new User(log, pas);
-				cout << "Before circle\n";
+				usr -> set_socket(socket);
+				
 				for(int r = 0; r <= (clients.size() -1); r++)
 				{
-					cout << "Circle\n";
 					if (clients.empty())
 					{
-						usr -> set_socket(socket);
 						clients.push_back(usr);
 						selector.add(*socket);
 						
@@ -73,7 +68,7 @@ int main()
 					
 					if(clients[r] -> get_name() == usr -> get_name())
 					{
-						cout << "Client exist\n";
+						std::cout << "Client exist\n";
 						Message message;
 						message._sender = "server";
 						message._recipient = log;
@@ -85,7 +80,8 @@ int main()
 						
 						packet.clear();
 						message.clear();
-						
+
+						selector.remove(*socket);
 						delete socket;
 						delete usr;
 						
@@ -94,7 +90,6 @@ int main()
 					
 					if( (r == (clients.size() -1)) && ( (clients[r] -> get_name()) != (usr -> get_name()) ) )
 					{
-						usr -> set_socket(socket);
 						clients.push_back(usr);
 						selector.add(*socket);
 						
@@ -128,8 +123,8 @@ int main()
 				{
 					if(selector.isReady(*(clients[i] -> get_socket())))
 					{
-						Packet packet;
-						if(clients[i] -> get_socket() -> receive(packet) == Socket::Done)
+						sf::Packet packet;
+						if(clients[i] -> get_socket() -> receive(packet) == sf::Socket::Done)
 						{
 							Message message;
 							packet >> message;
@@ -158,8 +153,7 @@ int main()
 
 								for(int i = 0; i < clients.size(); i++)
 								{
-									
-									(*clients[i]).get_socket() -> send(packet);
+									if(clients[i] -> get_name() != message._sender) (*clients[i]).get_socket() -> send(packet);
 								}
 
 								packet.clear();
@@ -168,16 +162,18 @@ int main()
 							
 							if (message._text_message == "delete")
 							{//очищает вектор от офлайн юзеров
-								for(int i = 0; i < clients.size(); i++)
+								for(auto iter = clients.begin(); iter < clients.end(); iter++)
 								{
-									if((clients[i] -> get_name()) == message._sender)
+									if((*iter) -> get_name() == message._sender)
 									{
-										selector.remove(*(clients[i] -> get_socket()));
-										clients.erase(clients.begin() + i);
+										selector.remove( *((*iter) -> get_socket()));
+										clients.erase(std::remove(clients.begin(), clients.end(), *iter), clients.end());
+										
+										packet.clear();
+										message.clear();
+										
+										break;
 									}
-									packet.clear();
-									message.clear();
-									break;
 								}
 							//Конец очистки
 							}
