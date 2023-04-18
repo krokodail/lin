@@ -1,21 +1,22 @@
+//Клиентская часть
+//Функцию регистрации сделал отдельной, так удобней, когда проводиться проверка на существующего пользователя 
+//Меню клиента реализовано через свитч
+//Использована стороняя библиотека SFML
+
 #include <iostream>
 #include <string>
-#include <csignal>
 #include "message.h"
 #include <SFML/Network.hpp>
 
-using namespace sf;
-using namespace std;
-
-void Registration (TcpSocket& sock, Packet& pack, Message& mess, string& log, string& pas)
+void Registration (sf::TcpSocket& sock, sf::Packet& pack, Message& mess, std::string& log, std::string& pas)
 {
 	
-	cout << "Ваш логин: ";
-	cin >> log;
+	std::cout << "Ваш логин: ";
+	std::cin >> log;
 	
-	cout << "\nВаш пароль: ";
-	cin >> pas;
-	cout << endl;
+	std::cout << "\nВаш пароль: ";
+	std::cin >> pas;
+	std::cout << std::endl;
 	
 	mess._sender = log;
 
@@ -28,41 +29,44 @@ void Registration (TcpSocket& sock, Packet& pack, Message& mess, string& log, st
 int main()
 {
 
-	TcpSocket socket;
+	sf::TcpSocket socket;
 	socket.setBlocking(false);
-	socket.connect("192.168.0.149", 55001);
+	socket.connect("192.168.0.149", 55001); //Прописываем тот ip, который показывает сервер
 	
 	Message message;
-	Packet packet;
+	sf::Packet packet;
 
-	string login(""), pass("");
+	std::string login(""), pass("");
 
 	Registration(socket, packet, message, login, pass);
 
-	short select(0); // переменная Для switch
-	
+	short select(0);
+
 	while(true)
 	{
 		socket.receive(packet);
 		packet >> message;
-		cout << "\nВведите 0(ноль), чтобы узнать результат входа: ";
-		cin >> select;
-		if((select == 0) && (message._text_message == "Exist"))
+		
+		if(message._text_message == "Exist")
 		{
-			cout << "\nПользователь с таким логином сейчас онлайн. Придумайте новый логин и пароль\n";
+			std::cout << "\nПользователь с таким логином сейчас онлайн. Придумайте новый логин и пароль\n";
 			packet.clear();
 			message.clear();
 			socket.disconnect();
-			socket.connect("192.168.0.149", 55001);
+			socket.connect("192.168.0.149", 55001);//Тут тоже нужно прописать ip сервера
 			Registration(socket, packet, message, login, pass);
 		}
 		
-		else if((select == 0) && (message._text_message == "good")) break;
+		else if(message._text_message == "good")
+		{
+			std::cout << "\nВы Зарегистрированы\n";
+			break;
+		}
 	}
 
 	while(true)
 	{
-		cout << "Для получения ответа на запрос или проверки входящих выберите 4-ый вариант"
+		std::cout << "Для получения ответа на запрос или проверки входящих выберите 4-ый вариант"
 		     << "\n1) Получить список онлайн пользователей\n"
 		     << "2) Отправить личное сообщение\n"
 		     << "3) Отправить сообщение всем\n"
@@ -70,8 +74,8 @@ int main()
 		     << "5) Выход(Закрыть приложение)\n"
 		     << "Введите номер: ";
 
-		cin >> select;
-		cout << endl;
+		std::cin >> select;
+		std::cout << std::endl;
 		
 		switch(select)
 		{
@@ -94,12 +98,12 @@ int main()
 					
 					message._sender = login;
 					
-					cout << "\nКому отправим(ник)?: ";
-					cin >> message._recipient;
+					std::cout << "\nКому отправим(ник)?: ";
+					std::cin >> message._recipient;
 					
-					cout << "\nВаше послание?: ";
-					cin.ignore(numeric_limits<streamsize>::max(), '\n');
-					getline(cin, message._text_message);
+					std::cout << "\nВаше послание?: ";
+					std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+					std::getline(std::cin, message._text_message);
 					
 					packet << message;
 					socket.send(packet);
@@ -115,9 +119,9 @@ int main()
 					
 					message._recipient = "all";
 					
-					cout << "\nВаше послание?: ";
-					cin.ignore(numeric_limits<streamsize>::max(), '\n');
-					getline(cin, message._text_message);
+					std::cout << "\nВаше послание?: ";
+					std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+					std::getline(std::cin, message._text_message);
 					
 					packet << message;
 					socket.send(packet);
@@ -126,14 +130,14 @@ int main()
 			
 			case 4:
 				{
-					if(socket.receive(packet) == Socket::Done)
+					if(socket.receive(packet) == sf::Socket::Done)
 					{
 						packet >> message;
-						cout  <<  message << "\n";
+						std::cout  << "\nСообщение от "<<  message << "\n\n";
 						packet.clear();
 						message.clear();
 					}
-					else cout << "\nВходящих пока не было\n";
+					else std::cout << "\nВходящих пока не было\n\n";
 					
 					break;
 				}
@@ -141,7 +145,8 @@ int main()
 			case 5:
 				{
 					packet.clear();
-					
+					message.clear();
+
 					message._sender = login;
 					message._text_message = "delete";
 					message._recipient = "Server";
@@ -158,7 +163,7 @@ int main()
 				}
 
 			default:
-				cout << "Нет такого варианта\n";
+				std::cout << "Нет такого варианта\n";
 				break;
 		}
 		
