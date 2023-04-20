@@ -40,8 +40,6 @@ int main()
 
 	Registration(socket, packet, message, login, pass);
 
-	short select(0);
-
 	while(true)
 	{
 		socket.receive(packet);
@@ -53,33 +51,40 @@ int main()
 			packet.clear();
 			message.clear();
 			socket.disconnect();
-			socket.connect("192.168.0.149", 55001);//Тут тоже нужно прописать ip сервера
+			socket.connect("192.168.0.149", 55001);//Тут тоже нужно прописать ip
 			Registration(socket, packet, message, login, pass);
 		}
 		
 		else if(message._text_message == "good")
 		{
-			std::cout << "\nВы Зарегистрированы\n";
+			std::cout << "\nВы Зарегистрированы\n\n";
 			break;
 		}
 	}
 
 	while(true)
 	{
+		char select('0');
+		
 		std::cout << "Для получения ответа на запрос или проверки входящих выберите 4-ый вариант"
 		     << "\n1) Получить список онлайн пользователей\n"
 		     << "2) Отправить личное сообщение\n"
 		     << "3) Отправить сообщение всем\n"
 		     << "4) Проверить входящие сообщения\n"
-		     << "5) Выход(Закрыть приложение)\n"
-		     << "Введите номер: ";
+		     << "5) Выход(Закрыть приложение)\n";
+		     
+		while(true)
+		{//Проверка ввода на соответствие меню
+			std::cout << "Введите номер из меню: ";
+			std::cin >> select;
+			std::cout << std::endl;
+			if(select >= '1' && select <= '5') break;
+			else continue;
+		}
 
-		std::cin >> select;
-		std::cout << std::endl;
-		
 		switch(select)
 		{
-			case 1:
+			case '1':
 				{
 					packet.clear();
 					message._sender = login;
@@ -92,7 +97,7 @@ int main()
 					break;
 				}
 			
-			case 2:
+			case '2':
 				{
 					packet.clear();
 					
@@ -111,7 +116,7 @@ int main()
 					break;
 				}
 			
-			case 3:
+			case '3':
 				{
 					packet.clear();
 					
@@ -128,7 +133,7 @@ int main()
 					break;
 				}
 			
-			case 4:
+			case '4':
 				{
 					if(socket.receive(packet) == sf::Socket::Done)
 					{
@@ -142,7 +147,7 @@ int main()
 					break;
 				}
 
-			case 5:
+			case '5':
 				{
 					packet.clear();
 					message.clear();
