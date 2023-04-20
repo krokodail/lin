@@ -12,7 +12,6 @@ int main()
 
 	
 	sf::TcpListener listener;
-	//listener.setBlocking(false);
 	sf::SocketSelector selector;
 
 	std::vector<User*> clients;
