@@ -4,13 +4,14 @@
 #include <string>
 #include "message.h"
 #include "db.h"
+#include "log.h"
 #include <thread>
 #include <mutex>
 
 // Функция для обработки каждого клиента
 void handleClient(sf::TcpSocket* socket, const std::string& log, DB& db,
                   std::vector<std::pair<std::string, sf::TcpSocket*>>& clients,
-                  sf::SocketSelector& selector, std::mutex& mutex) {
+                  sf::SocketSelector& selector, std::mutex& mutex, Logging& logObj) {
     sf::Packet packet;
 
     while (true) {
@@ -20,6 +21,11 @@ void handleClient(sf::TcpSocket* socket, const std::string& log, DB& db,
                 Message message;
                 packet >> message;
 
+                // запись полученного сообщения
+                std::string logMessage = "Received from " + log + ": " + message._text_message;
+                
+                logObj.write_string(logMessage);
+				
                 if (message._text_message == "list_of_users") {
                     packet.clear();
                     message.clear();
@@ -45,7 +51,6 @@ void handleClient(sf::TcpSocket* socket, const std::string& log, DB& db,
                     }
                 } else if (message._text_message == "delete") {
                     std::lock_guard<std::mutex> lock(mutex);
-                    
 
                     for (auto iter = clients.begin(); iter != clients.end(); ++iter) {
                         if (iter->first == message._sender) {
@@ -85,6 +90,9 @@ int main() {
     std::vector<std::pair<std::string, sf::TcpSocket*>> clients;
     std::mutex mutex;
 
+    Logging logObj("log"); // создание объекта для записи сообщений в журнал
+    logObj.write_string("Server is running");
+
     listener.listen(55001);
     selector.add(listener);
 
@@ -103,7 +111,7 @@ int main() {
 
                 for (const auto& client : clients) {
                     if (client.first == log) {
-                        std::cout << "Client exists\n";
+                        logObj.write_string("Client exists: " + log);
                         Message message;
                         message._sender = "server";
                         message._recipient = log;
@@ -144,7 +152,7 @@ int main() {
                     message.clear();
 
                     // Сделал поток для клиента и передал параметры
-                    std::thread clientThread(handleClient, socket, log, std::ref(db), std::ref(clients), std::ref(selector), std::ref(mutex));
+                    std::thread clientThread(handleClient, socket, log, std::ref(db), std::ref(clients), std::ref(selector), std::ref(mutex), std::ref(logObj));
                     clientThread.detach();  // Отсоединяем поток
                 }
             }
